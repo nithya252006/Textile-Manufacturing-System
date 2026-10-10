@@ -89,3 +89,42 @@ def test_buyer_cannot_access_inventory(client):
         headers={"Authorization": f"Bearer {login.json()['token']}"},
     )
     assert response.status_code == 403
+
+
+def test_yarn_entry_rejects_incomplete_supplier_invoice(client):
+    login = client.post(
+        "/api/auth/login",
+        json={"email": "owner@everestmills.com", "password": "everest123", "role": "owner"},
+    )
+    response = client.post(
+        "/api/inventory/yarn",
+        headers={"Authorization": f"Bearer {login.json()['token']}"},
+        json={
+            "material_name": "Test cotton",
+            "color": "Audit Blue",
+            "lot_number": "LOT-AUDIT-001",
+            "quantity_kg": 10,
+            "supplier_invoice_number": "INV-AUDIT-001",
+        },
+    )
+    assert response.status_code == 400
+    assert "both a supplier invoice number" in response.json()["detail"]
+
+
+def test_dispatch_rejects_empty_roll_selection(client):
+    login = client.post(
+        "/api/auth/login",
+        json={"email": "owner@everestmills.com", "password": "everest123", "role": "owner"},
+    )
+    response = client.post(
+        "/api/orders-finance/dispatch",
+        headers={"Authorization": f"Bearer {login.json()['token']}"},
+        json={
+            "order_id": 1,
+            "truck_number": "TEST-TRUCK",
+            "invoice_number": "INV-AUDIT-EMPTY",
+            "roll_ids": [],
+        },
+    )
+    assert response.status_code == 400
+    assert "Select at least one" in response.json()["detail"]

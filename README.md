@@ -191,7 +191,7 @@ The health/readiness endpoint is `/health`; API documentation is at `/docs`.
 
 ### Frontend
 
-Set the service root to `frontend/`, install with `npm ci`, and build with `npm run build`. Configure `VITE_API_URL` to the backend's public base URL, such as `https://your-api.example.com`, then publish the generated `dist/` directory. Add the resulting frontend origin to backend `CORS_ORIGINS`.
+Set the service root to `frontend/`, install with `npm ci`, and build with `npm run build`. Configure `VITE_API_URL` to the backend's public base URL, such as `https://your-api.example.com`, then publish the generated `dist/` directory. Add the resulting frontend origin to backend `CORS_ORIGINS`. Configure the static host to serve `index.html` for client-side routes such as `/register`, so refreshing those URLs does not return a 404.
 
 ### Existing Local Data
 
