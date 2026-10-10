@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
-import Inventory from './pages/Inventory';
-import Production from './pages/Production';
-import Orders from './pages/Orders';
-import Accounting from './pages/Accounting';
-import RoleDashboard from './pages/RoleDashboard';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import { ROLE_HOME } from './authRoles';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Inventory = lazy(() => import('./pages/Inventory'));
+const Production = lazy(() => import('./pages/Production'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Accounting = lazy(() => import('./pages/Accounting'));
+const RoleDashboard = lazy(() => import('./pages/RoleDashboard'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
 
 const OWNER_DASHBOARD_ROLES = {
   'store-dashboard': 'store_keeper',
@@ -16,6 +17,14 @@ const OWNER_DASHBOARD_ROLES = {
   'dispatch-dashboard': 'dispatch',
   'buyer-dashboard': 'buyer',
 };
+
+function PageLoading() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-12 text-center text-sm text-[#6C7B67]" role="status">
+      Loading section...
+    </div>
+  );
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -97,21 +106,25 @@ export default function App() {
 
   if (!user) {
     return authView === 'register' ? (
-      <Register
-        selectedRole={selectedRole}
-        onRoleChange={setSelectedRole}
-        onRegister={handleAuthSuccess}
-        onSwitchToLogin={() => switchAuthView('login')}
-        onSwitchToRegister={() => switchAuthView('register')}
-      />
+      <Suspense fallback={<PageLoading />}>
+        <Register
+          selectedRole={selectedRole}
+          onRoleChange={setSelectedRole}
+          onRegister={handleAuthSuccess}
+          onSwitchToLogin={() => switchAuthView('login')}
+          onSwitchToRegister={() => switchAuthView('register')}
+        />
+      </Suspense>
     ) : (
-      <Login
-        selectedRole={selectedRole}
-        onRoleChange={setSelectedRole}
-        onLogin={handleAuthSuccess}
-        onSwitchToLogin={() => switchAuthView('login')}
-        onSwitchToRegister={() => switchAuthView('register')}
-      />
+      <Suspense fallback={<PageLoading />}>
+        <Login
+          selectedRole={selectedRole}
+          onRoleChange={setSelectedRole}
+          onLogin={handleAuthSuccess}
+          onSwitchToLogin={() => switchAuthView('login')}
+          onSwitchToRegister={() => switchAuthView('register')}
+        />
+      </Suspense>
     );
   }
 
@@ -120,15 +133,17 @@ export default function App() {
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
 
       <main className="flex-1 pb-16">
-        {activeTab === 'dashboard' && user.role === 'owner' && <Dashboard setActiveTab={setActiveTab} />}
-        {activeTab === 'dashboard' && user.role !== 'owner' && <RoleDashboard user={user} setActiveTab={setActiveTab} />}
-        {OWNER_DASHBOARD_ROLES[activeTab] && user.role === 'owner' && (
-          <RoleDashboard user={user} dashboardRole={OWNER_DASHBOARD_ROLES[activeTab]} setActiveTab={setActiveTab} />
-        )}
-        {activeTab === 'inventory' && <Inventory />}
-        {activeTab === 'production' && <Production />}
-        {activeTab === 'orders' && <Orders user={user} />}
-        {activeTab === 'accounting' && user.role === 'owner' && <Accounting />}
+        <Suspense fallback={<PageLoading />}>
+          {activeTab === 'dashboard' && user.role === 'owner' && <Dashboard setActiveTab={setActiveTab} />}
+          {activeTab === 'dashboard' && user.role !== 'owner' && <RoleDashboard user={user} setActiveTab={setActiveTab} />}
+          {OWNER_DASHBOARD_ROLES[activeTab] && user.role === 'owner' && (
+            <RoleDashboard user={user} dashboardRole={OWNER_DASHBOARD_ROLES[activeTab]} setActiveTab={setActiveTab} />
+          )}
+          {activeTab === 'inventory' && <Inventory />}
+          {activeTab === 'production' && <Production />}
+          {activeTab === 'orders' && <Orders user={user} />}
+          {activeTab === 'accounting' && user.role === 'owner' && <Accounting />}
+        </Suspense>
       </main>
 
       <footer className="bg-[#EFEAE0] border-t border-[#E3DDD3] py-8 px-4 text-center">
