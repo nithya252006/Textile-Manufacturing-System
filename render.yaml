@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: textile-manufacturing-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: OWNER_REGISTRATION_CODE
+        generateValue: true
+      - key: STORE_KEEPER_REGISTRATION_CODE
+        generateValue: true
+      - key: FLOOR_SUPERVISOR_REGISTRATION_CODE
+        generateValue: true
+      - key: DISPATCH_REGISTRATION_CODE
+        generateValue: true

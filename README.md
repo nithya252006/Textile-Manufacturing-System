@@ -158,44 +158,45 @@ This confirms that the application architecture, API wiring, and frontend-to-bac
 
 ## Deployment
 
-Deploy the frontend and backend as separate services.
+The repository includes a Render Blueprint at `render.yaml` and Vercel SPA routing at `frontend/vercel.json`. Use Neon for PostgreSQL and deploy the API and frontend separately.
 
-### Backend API
+### 1. Create PostgreSQL
 
-Set the service root to `backend/`, install `requirements.txt`, and configure these environment variables in the hosting dashboard:
+1. Create a Neon project and database.
+2. Copy the database connection string from Neon. Use the direct connection string and keep it private; do not add it to source files or commit it.
 
-| Variable | Production value |
-| --- | --- |
-| `APP_ENV` | `production` |
-| `DATABASE_URL` | PostgreSQL connection URL from the database provider |
-| `JWT_SECRET_KEY` | Random secret of at least 32 characters |
-| `CORS_ORIGINS` | Exact frontend origin, for example `https://your-app.example.com` |
-| `OWNER_REGISTRATION_CODE` | Private owner invite code |
-| `STORE_KEEPER_REGISTRATION_CODE` | Private store invite code |
-| `FLOOR_SUPERVISOR_REGISTRATION_CODE` | Private floor invite code |
-| `DISPATCH_REGISTRATION_CODE` | Private dispatch invite code |
+The application still defaults to SQLite for local development. Render sets `APP_ENV=production`, which requires a PostgreSQL `DATABASE_URL`; it will not silently start on SQLite.
 
-Run migrations as the service's pre-deploy or release command:
+### 2. Deploy the API on Render
 
-```bash
-python -m alembic upgrade head
-```
+1. Push the repository to GitHub, then create a Render Blueprint from that repository. Render reads the root `render.yaml` and creates the Python web service.
+2. When prompted for `DATABASE_URL`, enter the Neon connection string. For initial `CORS_ORIGINS`, enter a temporary valid origin such as `https://example.invalid`; replace it with the Vercel URL after the frontend is deployed.
+3. Render generates the JWT secret and staff invite codes. Keep those values private. Buyer registration is open; owner and staff accounts require their corresponding invite codes.
+4. The start command runs `python -m alembic upgrade head` before Uvicorn, and Render checks `/health`.
 
-Start the API with the host-provided port:
+After the service deploys, note its public base URL, for example `https://textile-manufacturing-api.onrender.com`.
 
-```bash
-uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
-```
+### 3. Deploy the frontend on Vercel
 
-The health/readiness endpoint is `/health`; API documentation is at `/docs`.
+1. Import the same GitHub repository as a Vercel project and set the project root to `frontend/`.
+2. Use `npm ci` to install, `npm run build` to build, and `dist` as the output directory.
+3. Set the build environment variable `VITE_API_URL` to the Render API base URL, with no trailing slash, then deploy.
+4. Note the Vercel site origin, for example `https://textile-manufacturing-system.vercel.app`.
 
-### Frontend
+The Vercel configuration rewrites `/login` and `/register` to the React entry page so refreshing those client-side paths works.
 
-Set the service root to `frontend/`, install with `npm ci`, and build with `npm run build`. Configure `VITE_API_URL` to the backend's public base URL, such as `https://your-api.example.com`, then publish the generated `dist/` directory. Add the resulting frontend origin to backend `CORS_ORIGINS`. Configure the static host to serve `index.html` for client-side routes such as `/register`, so refreshing those URLs does not return a 404.
+### 4. Connect and Verify
+
+1. In Render, replace the temporary `CORS_ORIGINS` value with the exact Vercel origin (scheme and host only; no path or trailing slash), then save/redeploy.
+2. Open `https://<render-service>.onrender.com/health`; expect HTTP 200 and `{"status":"ok",...}`.
+3. Register the owner account using the private `OWNER_REGISTRATION_CODE`, then test login and role-protected workflows from the Vercel site.
+4. Check `/docs` on the Render service for API diagnostics.
+
+Do not use the development demo credentials in production. Demo users and sample rows are only seeded when `APP_ENV=development`.
 
 ### Existing Local Data
 
-Alembic creates and updates the database schema; it does not copy rows from the local SQLite file to PostgreSQL. The initial migration is intended for a new production database. Preserve local records separately before deployment if they are needed.
+Alembic creates and updates the database schema; it does not copy rows from the local SQLite file to PostgreSQL. The initial migration is intended for a new production database. Preserve local records separately before deployment if they are needed. Do not point the first production deployment at an existing database with an unknown schema state.
 
 ### Ongoing Schema Changes
 
