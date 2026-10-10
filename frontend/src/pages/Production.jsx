@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, CheckCircle2, AlertOctagon, RotateCcw, Wrench, Search, ShieldCheck, AlertTriangle, ClipboardList } from 'lucide-react';
+import { Activity, CheckCircle2, Search, ShieldCheck, AlertTriangle, ClipboardList } from 'lucide-react';
 import { API_BASE, authFetch } from '../api';
 
 export default function Production() {
@@ -26,7 +26,7 @@ export default function Production() {
 
   // QC Form
   const [qcForm, setQcForm] = useState({
-    roll_code: 'ROLL-' + Math.floor(100 + Math.random() * 900),
+    roll_code: '',
     order_id: 1,
     machine_id: 3,
     meters: 100,
@@ -36,7 +36,6 @@ export default function Production() {
   });
 
   const fetchData = async () => {
-    setPageError(null);
     try {
       const mRes = await authFetch(`${API_BASE}/api/production/machines`);
       if (!mRes.ok) {
@@ -45,6 +44,7 @@ export default function Production() {
         return;
       }
       const mData = await mRes.json();
+      setPageError(null);
       setMachines(mData.machines || []);
       if (mData.floor_summary) setFloorSummary(mData.floor_summary);
 
@@ -81,7 +81,11 @@ export default function Production() {
   };
 
   useEffect(() => {
-    fetchData();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void fetchData();
+    });
+    return () => { active = false; };
   }, []);
 
   const handleUpdateStatus = async (machineId, newStatus, addOutputMeters = 0) => {
@@ -247,7 +251,14 @@ export default function Production() {
           )}
         </div>
         <button
-          onClick={() => { setShowQcModal(true); setQcError(null); }}
+          onClick={() => {
+            setQcForm((current) => ({
+              ...current,
+              roll_code: current.roll_code || `ROLL-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+            }));
+            setShowQcModal(true);
+            setQcError(null);
+          }}
           className="flex items-center gap-2 bg-[#53634F] hover:bg-[#42503F] text-[#FAF7F2] font-semibold px-5 py-3 rounded-full shadow-sm hover:shadow transition-all text-xs uppercase tracking-widest cursor-pointer"
         >
           <ShieldCheck className="h-4 w-4" />

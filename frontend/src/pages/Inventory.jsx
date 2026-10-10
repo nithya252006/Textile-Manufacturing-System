@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, AlertTriangle, PlusCircle, CheckCircle2, Search, Layers, Sparkles, ClipboardList } from 'lucide-react';
+import { Truck, AlertTriangle, PlusCircle, CheckCircle2, Search, ClipboardList } from 'lucide-react';
 import { API_BASE, authFetch } from '../api';
 
 export default function Inventory() {
@@ -23,7 +23,7 @@ export default function Inventory() {
   const [newYarn, setNewYarn] = useState({
     material_name: 'Cotton 40s Combed',
     color: 'Navy Blue',
-    lot_number: 'LOT-' + Math.floor(1000 + Math.random() * 9000),
+    lot_number: '',
     quantity_kg: 250,
     min_threshold_kg: 100,
     supplier_name: 'Coimbatore Cotton Mills',
@@ -33,7 +33,6 @@ export default function Inventory() {
   });
 
   const fetchData = async () => {
-    setPageError(null);
     try {
       const res = await authFetch(`${API_BASE}/api/inventory/yarn`);
       if (!res.ok) {
@@ -42,6 +41,7 @@ export default function Inventory() {
         return;
       }
       const data = await res.json();
+      setPageError(null);
       setStocks(data);
 
       const alertRes = await authFetch(`${API_BASE}/api/inventory/alerts`);
@@ -67,7 +67,11 @@ export default function Inventory() {
   };
 
   useEffect(() => {
-    fetchData();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void fetchData();
+    });
+    return () => { active = false; };
   }, []);
 
   const handleAddYarn = async (e) => {
@@ -95,7 +99,7 @@ export default function Inventory() {
       setNewYarn({
         material_name: 'Cotton 40s Combed',
         color: 'Navy Blue',
-        lot_number: 'LOT-' + Math.floor(1000 + Math.random() * 9000),
+        lot_number: '',
         quantity_kg: 250,
         min_threshold_kg: 100,
         supplier_name: 'Coimbatore Cotton Mills',
@@ -217,7 +221,14 @@ export default function Inventory() {
             <span>Reserve for Order</span>
           </button>
           <button
-            onClick={() => { setShowAddModal(true); setAddYarnError(null); }}
+            onClick={() => {
+              setNewYarn((current) => ({
+                ...current,
+                lot_number: current.lot_number || `LOT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+              }));
+              setShowAddModal(true);
+              setAddYarnError(null);
+            }}
             className="flex items-center gap-2 bg-[#53634F] hover:bg-[#42503F] text-[#FAF7F2] font-semibold px-5 py-3 rounded-full shadow-sm hover:shadow transition-all text-xs uppercase tracking-widest cursor-pointer"
           >
             <PlusCircle className="h-4 w-4" />

@@ -21,11 +21,7 @@ export default function Accounting() {
   const [workerForm, setWorkerForm] = useState({ name: '', job_title: '', daily_wage: 0 });
   const [attendanceForm, setAttendanceForm] = useState({ worker_id: '', attendance_date: today, shift: 'Shift A', status: 'Present', order_id: '' });
   const [buyerPayment, setBuyerPayment] = useState({ order_id: '', amount: '', reference: '' });
-  const [wageAmounts, setWageAmounts] = useState({});
-  const [supplierAmounts, setSupplierAmounts] = useState({});
-
   const loadData = async () => {
-    setError('');
     try {
       const [workerRows, attendanceRows, billRows, buyerRows] = await Promise.all([
         requestJson('/api/accounting/workers'),
@@ -37,19 +33,45 @@ export default function Accounting() {
       setAttendance(attendanceRows);
       setSupplierBills(billRows);
       setBuyerBalances(buyerRows);
-      if (!attendanceForm.worker_id && workerRows.length) {
-        setAttendanceForm((current) => ({ ...current, worker_id: String(workerRows[0].id) }));
+      setError('');
+      if (workerRows.length) {
+        setAttendanceForm((current) => current.worker_id ? current : ({ ...current, worker_id: String(workerRows[0].id) }));
       }
-      if (!buyerPayment.order_id && buyerRows.length) {
+      if (buyerRows.length) {
         const dueOrder = buyerRows.find((order) => order.balance > 0) || buyerRows[0];
-        setBuyerPayment((current) => ({ ...current, order_id: String(dueOrder.order_id) }));
+        setBuyerPayment((current) => current.order_id ? current : ({ ...current, order_id: String(dueOrder.order_id) }));
       }
     } catch (loadError) {
       setError(loadError.message || 'Could not load accounting records.');
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      requestJson('/api/accounting/workers'),
+      requestJson('/api/accounting/attendance'),
+      requestJson('/api/accounting/supplier-bills'),
+      requestJson('/api/accounting/buyer-balances'),
+    ]).then(([workerRows, attendanceRows, billRows, buyerRows]) => {
+      if (cancelled) return;
+      setWorkers(workerRows);
+      setAttendance(attendanceRows);
+      setSupplierBills(billRows);
+      setBuyerBalances(buyerRows);
+      setError('');
+      if (workerRows.length) {
+        setAttendanceForm((current) => current.worker_id ? current : ({ ...current, worker_id: String(workerRows[0].id) }));
+      }
+      if (buyerRows.length) {
+        const dueOrder = buyerRows.find((order) => order.balance > 0) || buyerRows[0];
+        setBuyerPayment((current) => current.order_id ? current : ({ ...current, order_id: String(dueOrder.order_id) }));
+      }
+    }).catch((loadError) => {
+      if (!cancelled) setError(loadError.message || 'Could not load accounting records.');
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const submit = async (path, body, successMessage) => {
     setError('');
@@ -90,21 +112,19 @@ export default function Accounting() {
   const handleWagePayment = async (attendanceId, event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const saved = await submit(`/api/accounting/attendance/${attendanceId}/payments`, {
+    await submit(`/api/accounting/attendance/${attendanceId}/payments`, {
       amount: Number(form.get('amount')),
       reference: form.get('reference') || null,
     }, 'Wage payment recorded.');
-    if (saved) setWageAmounts((values) => ({ ...values, [attendanceId]: '' }));
   };
 
   const handleSupplierPayment = async (billId, event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const saved = await submit(`/api/accounting/supplier-bills/${billId}/payments`, {
+    await submit(`/api/accounting/supplier-bills/${billId}/payments`, {
       amount: Number(form.get('amount')),
       reference: form.get('reference') || null,
     }, 'Supplier payment recorded.');
-    if (saved) setSupplierAmounts((values) => ({ ...values, [billId]: '' }));
   };
 
   const handleBuyerPayment = async (event) => {

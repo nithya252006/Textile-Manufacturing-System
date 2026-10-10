@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Users, Factory, Award, ArrowUpRight, ArrowRight, BarChart2, Layers, ShieldCheck, Truck, PackageCheck, ReceiptText } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, Factory, Award, ArrowUpRight, ArrowRight, Layers, ShieldCheck, Truck, PackageCheck, ReceiptText } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -68,7 +68,7 @@ export default function Dashboard({ setActiveTab }) {
           const errBody = await res.json().catch(() => ({}));
           setError(errBody.detail || `Failed to fetch finance data (HTTP ${res.status})`);
         }
-      } catch (err) {
+      } catch {
         // Network error only
         setIsOffline(true);
       }

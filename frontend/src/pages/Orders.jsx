@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, PhoneCall, Truck, PlusCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { FileText, PhoneCall, Truck, PlusCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { API_BASE, authFetch } from '../api';
+
+const OFFLINE_ORDERS = [
+  { id: 1, order_code: 'ORD-2026-001', buyer_name: 'Raymond Garments', fabric_type: 'Cotton Shirting', color: 'Navy Blue', quantity_meters: 2500, produced_meters: 1800, completed_meters: 120, progress_percentage: 4.8, deadline: '2026-10-15', status: 'Weaving', total_price: 375000 },
+  { id: 2, order_code: 'ORD-2026-002', buyer_name: 'FabIndia Retail', fabric_type: 'Pure Linen', color: 'Olive Green', quantity_meters: 1000, produced_meters: 300, completed_meters: 0, progress_percentage: 0, deadline: '2026-10-18', status: 'Pending', total_price: 220000 },
+  { id: 3, order_code: 'ORD-2026-003', buyer_name: 'Zara Exports', fabric_type: 'Rayon Printed', color: 'Pure White', quantity_meters: 5000, produced_meters: 4900, completed_meters: 150, progress_percentage: 3, deadline: '2026-10-12', status: 'QC Passed', total_price: 650000 },
+];
 
 export default function Orders({ user }) {
   const [orders, setOrders] = useState([]);
@@ -36,7 +42,6 @@ export default function Orders({ user }) {
   });
 
   const fetchData = async () => {
-    setPageError(null);
     try {
       const endpoint = user?.role === 'buyer'
         ? `${API_BASE}/api/orders-finance/my-orders`
@@ -49,19 +54,16 @@ export default function Orders({ user }) {
         return;
       }
       const data = await res.json();
+      setPageError(null);
       setOrders(data);
-      if (data.length > 0 && !dispatchForm.order_id) {
-        setDispatchForm(prev => ({ ...prev, order_id: data[0].id }));
+      if (data.length > 0) {
+        setDispatchForm((prev) => prev.order_id ? prev : ({ ...prev, order_id: data[0].id }));
       }
       setIsOffline(false);
     } catch {
       // Offline fallback only on network error
       setIsOffline(true);
-      setOrders([
-        { id: 1, order_code: 'ORD-2026-001', buyer_name: 'Raymond Garments', fabric_type: 'Cotton Shirting', color: 'Navy Blue', quantity_meters: 2500, produced_meters: 1800, completed_meters: 120, progress_percentage: 4.8, deadline: '2026-10-15', status: 'Weaving', total_price: 375000 },
-        { id: 2, order_code: 'ORD-2026-002', buyer_name: 'FabIndia Retail', fabric_type: 'Pure Linen', color: 'Olive Green', quantity_meters: 1000, produced_meters: 300, completed_meters: 0, progress_percentage: 0, deadline: '2026-10-18', status: 'Pending', total_price: 220000 },
-        { id: 3, order_code: 'ORD-2026-003', buyer_name: 'Zara Exports', fabric_type: 'Rayon Printed', color: 'Pure White', quantity_meters: 5000, produced_meters: 4900, completed_meters: 150, progress_percentage: 3, deadline: '2026-10-12', status: 'QC Passed', total_price: 650000 },
-      ]);
+      setOrders(OFFLINE_ORDERS);
     }
   };
 
@@ -83,8 +85,31 @@ export default function Orders({ user }) {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [user?.role, user?.id]);
+    let cancelled = false;
+    const endpoint = user?.role === 'buyer'
+      ? `${API_BASE}/api/orders-finance/my-orders`
+      : `${API_BASE}/api/orders-finance/orders`;
+    authFetch(endpoint).then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (!cancelled) setPageError(err.detail || `HTTP ${res.status} loading orders`);
+        return;
+      }
+      const data = await res.json();
+      if (cancelled) return;
+      setPageError(null);
+      setOrders(data);
+      if (data.length > 0) {
+        setDispatchForm((prev) => prev.order_id ? prev : ({ ...prev, order_id: data[0].id }));
+      }
+      setIsOffline(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setIsOffline(true);
+      setOrders(OFFLINE_ORDERS);
+    });
+    return () => { cancelled = true; };
+  }, [user?.role]);
 
   const handleCreateOrder = async (e) => {
     e.preventDefault();
