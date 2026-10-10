@@ -46,22 +46,44 @@ class Machine(Base):
     name = Column(String(100), nullable=False) # e.g. Loom-A1, Spinner-02, Dye-Vat-3
     stage = Column(String(50), nullable=False) # Spinning, Weaving, Dyeing
     status = Column(String(50), default="Idle") # Running, Idle, Breakdown, Maintenance
-    current_order_id = Column(Integer, ForeignKey("buyer_orders.id"), nullable=True)
+    breakdown_reason = Column(String(200), nullable=True) # e.g. Motor overheating, Weft snap
+    downtime_minutes = Column(Integer, default=0)
+    shift_name = Column(String(50), default="Shift A (Morning)") # Shift A, Shift B, Shift C
     operator_name = Column(String(100), nullable=True) # Worker on shift
+    current_order_id = Column(Integer, ForeignKey("buyer_orders.id"), nullable=True)
     output_today_meters = Column(Float, default=0.0)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+    breakdown_logs = relationship("BreakdownLog", back_populates="machine")
+
+class BreakdownLog(Base):
+    """Scene 2: Log Machine Maintenance & Breakdowns"""
+    __tablename__ = "breakdown_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+    reason = Column(String(200), nullable=False)
+    operator_name = Column(String(100), nullable=True)
+    started_at = Column(DateTime, default=datetime.datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+    status = Column(String(50), default="Open") # Open, Resolved
+
+    machine = relationship("Machine", back_populates="breakdown_logs")
+
 class FabricRoll(Base):
-    """Scene 3: Quality Check & Traceability before Leaving Line (Person B)"""
+    """Scene 3: Quality Check & Deep Traceability (Person B)"""
     __tablename__ = "fabric_rolls"
 
     id = Column(Integer, primary_key=True, index=True)
     roll_code = Column(String(50), unique=True, index=True) # e.g. ROLL-8841
     order_id = Column(Integer, ForeignKey("buyer_orders.id"), nullable=False)
     machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+    yarn_lot_number = Column(String(50), nullable=True) # Raw yarn traceability
+    operator_name = Column(String(100), nullable=True) # Floor worker on shift
     meters = Column(Float, nullable=False)
     qc_status = Column(String(50), default="Pending") # Pending, Pass, Rework, Reject
     defect_reason = Column(String(200), nullable=True) # Holes, Colour mismatch, Uneven weaving, None
+    inspected_by = Column(String(100), default="QC Inspector")
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
