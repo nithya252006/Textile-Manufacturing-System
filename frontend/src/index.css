@@ -1,13 +1,127 @@
 @import "tailwindcss";
 
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
+  background-color: #F7F4EE;
+  color: #2A3528;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #F7F4EE;
+  color: #2A3528;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom typography classes matching Gemma Rose aesthetic */
+.font-editorial {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: 0.02em;
+}
+
+.font-script {
+  font-family: 'Italianno', cursive;
+  font-size: 2.2rem;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.font-script-lg {
+  font-family: 'Italianno', cursive;
+  font-size: 3.2rem;
+  line-height: 1;
+  font-weight: 400;
+}
+
+/* Architectural frames from reference image */
+.arch-top {
+  border-top-left-radius: 7rem;
+  border-top-right-radius: 7rem;
+}
+
+@media (min-width: 768px) {
+  .arch-top {
+    border-top-left-radius: 9rem;
+    border-top-right-radius: 9rem;
+  }
+}
+
+.arch-card {
+  border-radius: 6rem 6rem 1.5rem 1.5rem;
+}
+
+/* Polaroid aesthetic frame */
+.polaroid-frame {
+  background: #FFFFFF;
+  padding: 8px 8px 24px 8px;
+  box-shadow: 0 10px 25px -5px rgba(42, 53, 40, 0.12), 0 8px 10px -6px rgba(42, 53, 40, 0.08);
+  border: 1px solid rgba(227, 221, 211, 0.7);
+  transition: transform 0.3s ease;
+}
+
+.polaroid-frame:hover {
+  transform: rotate(-1deg) scale(1.02);
+}
+
+/* Sage and Sand theme utilities */
+.bg-sage-dark {
+  background-color: #53634F;
+}
+
+.bg-sage-deep {
+  background-color: #42503F;
+}
+
+.bg-sage-light {
+  background-color: #E2E8E0;
+}
+
+.bg-sage-soft {
+  background-color: #EDF2EC;
+}
+
+.bg-sand-warm {
+  background-color: #DDD4C7;
+}
+
+.bg-sand-light {
+  background-color: #EFEAE0;
+}
+
+.bg-linen-paper {
+  background-color: #FAF7F2;
+}
+
+.border-linen {
+  border-color: #E3DDD3;
+}
+
+.text-sage-dark {
+  color: #364433;
+}
+
+.text-sage-muted {
+  color: #6C7B67;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F7F4EE;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C9BFAF;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8E9F8A;
 }
