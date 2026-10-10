@@ -3,20 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
-from database import engine, Base, SessionLocal
-from database import get_db
+from sqlalchemy import text, or_
+from database import SessionLocal, get_db
 import models
 from routers import inventory, production, orders_finance, accounting
-from migrate_db import migrate
-from auth import create_access_token, get_current_user, hash_password, verify_password
+from auth import create_access_token, get_current_user, hash_password, verify_password, normalize_role, VALID_ROLES
 import datetime
 import hmac
 import os
-from sqlalchemy import or_
-
-# Ensure database schema is current before the app starts
-migrate()
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Everest Textile Mills - Manufacturing System",
@@ -24,10 +18,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for React Vite
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    if origin.strip()
+]
+if os.getenv("APP_ENV", "development").lower() != "development":
+    if (
+        "CORS_ORIGINS" not in os.environ
+        or not allowed_origins
+        or "*" in allowed_origins
+        or any("localhost" in origin or "127.0.0.1" in origin for origin in allowed_origins)
+    ):
+        raise RuntimeError("Set CORS_ORIGINS to the deployed frontend origin(s), not '*'")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows Vite dev server & production
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +45,16 @@ app.include_router(inventory.router)
 app.include_router(production.router)
 app.include_router(orders_finance.router)
 app.include_router(accounting.router)
+
+
+@app.get("/health")
+def health_check(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {
+        "status": "ok",
+        "app": "everest-textile-mills",
+        "environment": os.getenv("APP_ENV", "development"),
+    }
 
 
 class AuthRegisterRequest(BaseModel):
@@ -60,15 +77,15 @@ def register_user(data: AuthRegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="All fields are required")
 
     email = data.email.strip().lower()
-    role = data.role.strip().lower()
+    requested_role = data.role.strip().lower()
+    role = normalize_role(requested_role)
     role_registration_env = {
         "owner": "OWNER_REGISTRATION_CODE",
-        "operator": "FLOOR_SUPERVISOR_REGISTRATION_CODE",
         "store_keeper": "STORE_KEEPER_REGISTRATION_CODE",
         "floor_supervisor": "FLOOR_SUPERVISOR_REGISTRATION_CODE",
         "dispatch": "DISPATCH_REGISTRATION_CODE",
     }
-    if role not in {*role_registration_env, "buyer"}:
+    if requested_role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail="Select a valid account section")
 
     if role in role_registration_env:
@@ -108,8 +125,13 @@ def login_user(data: AuthLoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    if data.role and user.role != data.role.strip().lower():
+    requested_role = normalize_role(data.role)
+    user_role = normalize_role(user.role)
+    if requested_role and user_role != requested_role:
         raise HTTPException(status_code=403, detail="This account does not belong to the selected section")
+    if user.role != user_role:
+        user.role = user_role
+        db.commit()
 
     token = create_access_token(user)
     return {
@@ -118,7 +140,7 @@ def login_user(data: AuthLoginRequest, db: Session = Depends(get_db)):
             "id": user.id,
             "name": user.name,
             "email": user.email,
-            "role": user.role,
+            "role": user_role,
         },
     }
 
@@ -180,7 +202,7 @@ def seed_initial_data():
         if is_development:
             for email, role in demo_roles.items():
                 demo_user = db.query(models.User).filter(models.User.email == email).first()
-                if demo_user and demo_user.role in {"owner", "operator"}:
+                if demo_user and normalize_role(demo_user.role) in {"owner", "floor_supervisor"}:
                     demo_user.role = role
 
         if is_development and db.query(models.Machine).count() == 0:

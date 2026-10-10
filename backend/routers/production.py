@@ -32,7 +32,7 @@ class AssignMachineOrder(BaseModel):
 @router.get("/machines")
 def get_all_machines(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_roles("owner", "floor_supervisor", "operator")),
+    current_user: models.User = Depends(require_roles("owner", "floor_supervisor")),
 ):
     """Scene 2: Live floor status - which order is on which machine, idle vs running."""
     machines = db.query(models.Machine).all()
@@ -81,7 +81,7 @@ def update_machine_status(
     machine_id: int,
     req: MachineStatusUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_roles("owner", "floor_supervisor", "operator")),
+    current_user: models.User = Depends(require_roles("owner", "floor_supervisor")),
 ):
     """Scene 2: Handle machine breakdown, shift change, or resume."""
     machine = db.query(models.Machine).filter(models.Machine.id == machine_id).first()
@@ -103,7 +103,7 @@ def update_machine_status(
 def assign_order_to_machine(
     req: AssignMachineOrder,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_roles("owner", "floor_supervisor", "operator")),
+    current_user: models.User = Depends(require_roles("owner", "floor_supervisor")),
 ):
     """Assign an order to a spinning/weaving/dyeing machine."""
     machine = db.query(models.Machine).filter(models.Machine.id == req.machine_id).first()
@@ -152,7 +152,7 @@ def assign_order_to_machine(
 @router.get("/qc/rolls")
 def get_all_rolls(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_roles("owner", "floor_supervisor", "operator")),
+    current_user: models.User = Depends(require_roles("owner", "floor_supervisor")),
 ):
     """Scene 3: Clear record of what passed, what failed, and what is waiting."""
     rolls = db.query(models.FabricRoll).all()
@@ -197,7 +197,7 @@ def get_all_rolls(
 def inspect_fabric_roll(
     data: QCInspectionCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_roles("owner", "floor_supervisor", "operator")),
+    current_user: models.User = Depends(require_roles("owner", "floor_supervisor")),
 ):
     """Scene 3: Record quality check (Pass/Rework/Reject) with defect tracking."""
     if not db.query(models.BuyerOrder).filter(models.BuyerOrder.id == data.order_id).first():
@@ -236,7 +236,7 @@ def inspect_fabric_roll(
 def trace_roll(
     roll_code: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_roles("owner", "floor_supervisor", "operator")),
+    current_user: models.User = Depends(require_roles("owner", "floor_supervisor")),
 ):
     """Scene 3: Trace roll back to order, machine, operator, raw yarn lot, and diagnosis."""
     roll = db.query(models.FabricRoll).filter(models.FabricRoll.roll_code == roll_code).first()

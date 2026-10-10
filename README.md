@@ -1,51 +1,89 @@
-# 🧵 Everest Textile Mills - Management System
+# Everest Textile Mills Management System
 
-A unified digital backbone built for Everest Textile Mills to replace paper notebooks, floor walking, and telephone calls with automated real-time workflows.
+A full-stack textile manufacturing management application built to digitalize yarn intake, production tracking, quality checks, dispatch, and owner-level financial operations for Everest Textile Mills.
 
----
+## Overview
 
-## 🏗️ Architecture & Tech Stack
+This project replaces manual production tracking and paper-based reporting with a unified workflow that covers:
+- Yarn gate entry and stock monitoring
+- Production machine status and assignment
+- Quality inspection and roll traceability
+- Buyer orders and dispatch management
+- Payroll, supplier bills, and buyer receivables
+- Profit and cost dashboard for the owner
 
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Backend** | **FastAPI (Python)** | High-speed REST APIs, automatic Swagger documentation (`/docs`) |
-| **Database** | **SQLite + SQLAlchemy** | Zero-configuration database, pre-seeded models |
-| **Frontend** | **React (Vite) + Tailwind CSS** | Real-time floor status, modals, responsive tables |
-| **Charts** | **Recharts** | Interactive revenue, costs, and profit analytics |
+## Tech Stack
 
----
+| Layer | Stack | Purpose |
+| --- | --- | --- |
+| Backend | FastAPI + SQLAlchemy + Alembic | API layer, business logic, versioned schema migrations |
+| Database | SQLite locally; PostgreSQL in production | Persistent application data |
+| Frontend | React + Vite | Role-based dashboards and operations UI |
+| Auth | JWT + password hashing | Secure login and section-based access |
+| Charts | Recharts | Revenue, cost, and profit analytics |
 
-## 🎯 PDF Problem Statement Mapped to Modules
+## Mapping to the Problem Statement
 
-1. **Scene 1: Yarn arrives at the gate** (`Person A: feature/inventory`)
-   - Truck arrival gate entry (material type, color, lot number, quantity in kg).
-   - Automated low-stock threshold alerts.
-   - Pre-production material check calculator.
+### Scene 1: Yarn arrival and stock intake
+- Gate entry for yarn lots with quantity, color, and lot number
+- Low-stock threshold and material sufficiency checks
+- Supplier invoice and payment tracking
 
-2. **Scene 2 & 3: Floor mid-shift & Quality Checks** (`Person B: feature/production`)
-   - Machine status board (Spinning, Weaving, Dyeing - Running, Idle, Breakdown).
-   - Fabric roll inspection slips (Pass, Rework, Reject) with defect logging (holes, color mismatch, uneven weaving).
-   - End-to-end roll traceability to machine, shift operator, and order.
+### Scene 2 and 3: Floor and quality control
+- Machine board for Spinning, Weaving, and Dyeing
+- Status values: Idle, Running, Breakdown, Maintenance
+- Fabric roll QC states: Pending, Pass, Rework, Reject
+- Traceability from machine to order and product roll
 
-3. **Scene 4, 5 & 6: Orders, Dispatch & Owner Books** (`Person C: feature/orders-finance`)
-   - Instant buyer call inquiry view with live completion progress.
-   - Dispatch truck loading and invoice validation.
-   - Owner Executive Dashboard: Revenue vs Costs (Yarn + Wages + Power) = Net Profit.
+### Scene 4, 5 and 6: Orders, dispatch, and owner books
+- Buyer order booking and live status tracking
+- Roll selection for dispatch and invoice generation
+- Profit, cost, wages, and receivables dashboard
 
----
+## Project Structure
 
-## 🚀 How to Run Locally
+```text
+backend/
+  auth.py
+  alembic/
+    versions/
+  database.py
+  main.py
+  models.py
+  requirements.txt
+  requirements-dev.txt
+  routers/
+    accounting.py
+    inventory.py
+    orders_finance.py
+    production.py
 
-### 1. Backend (FastAPI)
+frontend/
+  src/
+  package.json
+  vite.config.js
+```
+
+## Run Instructions
+
+### 1) Backend
 ```bash
 cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+pip install -r requirements-dev.txt
+python -m alembic upgrade head
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
-- Swagger API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-The backend defaults to development mode for local use. Before starting it in PowerShell, configure a stable JWT secret and role invite codes:
+For a local database created by an earlier version of this project, back up `textile_factory.db` first, then mark the matching baseline and apply the role migration:
 
+```bash
+python -m alembic stamp 6e658d8b4ff4
+python -m alembic upgrade head
+```
+
+API docs: http://127.0.0.1:8000/docs
+
+Optional environment setup for PowerShell:
 ```powershell
 $env:APP_ENV = "development"
 $env:JWT_SECRET_KEY = "replace-with-a-long-random-secret"
@@ -55,87 +93,124 @@ $env:FLOOR_SUPERVISOR_REGISTRATION_CODE = "floor-invite"
 $env:DISPATCH_REGISTRATION_CODE = "dispatch-invite"
 ```
 
-Buyer self-registration does not require an invite code. Owner and staff registration requires the matching server-side invite code. In production, set `APP_ENV=production` and provide a strong `JWT_SECRET_KEY`; the backend refuses to start without it. Demo accounts/data are seeded only in development. Do not deploy a database copied from development without removing or rotating its demo accounts and passwords.
-
-### 2. Frontend (React + Vite)
+### 2) Frontend
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev -- --host 0.0.0.0 --port 5173
 ```
-- App UI: [http://localhost:5173](http://localhost:5173)
 
-To point the frontend at a backend running on a different host or port, create `frontend/.env`:
+Application URL: http://localhost:5173
 
-```dotenv
+If needed, create a frontend/.env file:
+```env
 VITE_API_URL=http://localhost:8000
 ```
 
-Restart Vite after changing this value.
+## Roles and Access
 
-## 🔐 Accounts & Roles
+| Role | Value | Access |
+| --- | --- | --- |
+| Owner Executive | owner | Full dashboard and all modules |
+| Store Keeper | store_keeper | Inventory |
+| Floor Supervisor | floor_supervisor | Production and QC |
+| Dispatch Section | dispatch | Orders and dispatch |
+| Buyer | buyer | Own order tracking |
 
-Login and registration have separate section selectors. Owner Executive can open every role dashboard; each other role can access only its own dashboard and work area:
+## Demo Accounts (Development Only)
 
-| Section | Role value | Workspace |
-| :--- | :--- | :--- |
-| Owner Executive | `owner` | Dashboard, inventory, production, and orders |
-| Store Keeper | `store_keeper` | Inventory |
-| Floor Supervisor | `floor_supervisor` | Production and QC |
-| Dispatch Section | `dispatch` | Orders and dispatch |
-| Buyer | `buyer` | The buyer's own orders |
+| Role | Email | Password |
+| --- | --- | --- |
+| Owner Executive | owner@everestmills.com | everest123 |
+| Store Keeper | store@everestmills.com | store123 |
+| Floor Supervisor | floor@everestmills.com | floor123 |
+| Dispatch Section | dispatch@everestmills.com | dispatch123 |
+| Buyer | buyer@everestmills.com | buyer123 |
 
-Development-only seeded demo accounts:
+## Verified Project Status
 
-| Section | Email | Password |
-| :--- | :--- | :--- |
-| Owner Executive | `owner@everestmills.com` | `everest123` |
-| Store Keeper | `store@everestmills.com` | `store123` |
-| Floor Supervisor | `floor@everestmills.com` | `floor123` |
-| Dispatch Section | `dispatch@everestmills.com` | `dispatch123` |
-| Buyer | `buyer@everestmills.com` | `buyer123` |
+The project has been validated for:
+- backend compilation
+- frontend build success
+- live FastAPI response on port 8000
+- successful login flow using the seeded owner account
+- automated auth and health API tests
+- Alembic upgrade and schema drift checks on SQLite
 
-The API rejects login when the selected section does not match the account role. Passwords are stored as salted PBKDF2 hashes; API sessions use signed JWTs. API routes also enforce role permissions independently of the frontend navigation.
+This confirms that the application architecture, API wiring, and frontend-to-backend connection are operational.
 
-## ✅ Operations Rules
+## Manual Test Checklist
 
-- Machine assignments require an existing order and machine; breakdown/maintenance machines, machines running another order, and dispatched orders cannot be assigned.
-- Yarn can be reserved from matching-color lots for an order. Reserved kilograms are removed from free availability; production assignment consumes reserved stock exactly once.
-- Machine status accepts `Idle`, `Running`, `Breakdown`, or `Maintenance` only.
-- QC status accepts `Pending`, `Pass`, `Rework`, or `Reject`. Pending rolls do not contribute to the QC pass-rate denominator.
-- Order progress is based on the total meters of QC-passed rolls, not the legacy `produced_meters` field.
-- Dispatches contain selected, QC-passed rolls that have not been dispatched. The API calculates their count and meters, prevents duplicate/over-quantity dispatch, and records revenue only for shipped meters.
-- Worker profiles, per-shift attendance, accrued wages, wage payments, supplier bills/payments, and buyer receipts are stored separately. Repeated attendance for the same worker/date/shift updates the row instead of duplicating it.
-- The owner dashboard recognizes sales revenue from shipped meters and cash received from buyer-payment records. Costs use supplier invoices, recorded attendance wages, and machine-cost estimates; the dashboard labels machine/power as estimated until actual bills are recorded.
+1. Launch backend and frontend.
+2. Open the app and log in with a seeded user.
+3. Confirm the selected role matches the account section.
+4. Check dashboard access and role-specific modules.
+5. Validate machine assignment, QC update, and order progress logic.
+6. Dispatch a QC-passed roll and verify invoice/profit calculations.
+7. Test attendance, wages, supplier bills, and buyer payment flows.
+8. Verify yarn reservation and stock reduction behavior.
 
-## 🧪 Manual Test Checklist
+## Notes
 
-1. Start the backend and frontend using the commands above; verify the frontend loads and `/docs` is reachable.
-2. Log in with each seeded staff account using its matching section. Confirm Store Keeper sees Inventory, Floor Supervisor sees Production, Dispatch sees Orders, and Owner sees all sections.
-3. Try signing in with a valid account under the wrong section. Confirm the API rejects it with HTTP 403.
-4. Register a buyer without an invite code. Confirm staff registration is rejected without its matching invite code, then test it with the configured code. Sign out and confirm each account can sign in only under its registered section.
-5. Assign a valid order to an idle machine. Try an unknown order, an unknown machine, a machine in Breakdown/Maintenance, a machine already running a different order, and an already-dispatched order; each invalid assignment should be rejected.
-6. Submit an unsupported machine status and QC status. Confirm request validation rejects each invalid value. Create a QC slip as Pending and confirm it does not inflate the pass rate.
-7. Add QC-passed rolls and confirm order progress equals passed-roll meters divided by ordered meters, capped at 100%. Rework, Reject, and Pending rolls must not increase progress.
-8. Dispatch a selected available roll. Confirm its meter count and invoice total are derived from the selected roll, and the roll disappears from available rolls and finished-goods inventory.
-9. Try dispatching the same roll again and dispatching more meters than the order quantity. Confirm both are rejected and the shelf audit remains consistent.
-10. Compare the owner dashboard with the dispatch/finance records. Unshipped orders must not count as revenue; an empty ledger must show zero revenue and costs.
-11. Log in as Owner, add a worker, record present/absent attendance for a shift, and confirm only Present creates accrued wages. Re-saving the same worker/date/shift should update the record, not duplicate it.
-12. Record partial worker and supplier payments and confirm balances decrease; try to pay more than the balance and confirm rejection. Record partial buyer receipts and confirm buyer receivables decrease independently from shipment revenue.
-13. Log yarn intake with supplier invoice number and total. Confirm the bill is visible in Payroll & Settlements; log a supplier payment and verify paid/balance totals.
-14. Reserve a matching-color yarn allocation for an order. Confirm free kilograms decrease and the lot lists its reserved order. Attempt another reservation beyond free stock and confirm rejection; assign the order to an idle machine and confirm the reservation is consumed and physical stock decreases once.
+- Development data is pre-seeded for demo use only; production never receives demo users or sample records.
+- The backend enforces role permissions independently of the frontend UI.
+- Production requires PostgreSQL, a strong JWT secret, secure invite codes, and explicit frontend CORS origins.
 
----
+## Deployment
 
-## 🌿 Git Branching Workflow for Teammates
+Deploy the frontend and backend as separate services.
 
-### After base setup is on `main`:
-Teammates should update their branches:
+### Backend API
+
+Set the service root to `backend/`, install `requirements.txt`, and configure these environment variables in the hosting dashboard:
+
+| Variable | Production value |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `DATABASE_URL` | PostgreSQL connection URL from the database provider |
+| `JWT_SECRET_KEY` | Random secret of at least 32 characters |
+| `CORS_ORIGINS` | Exact frontend origin, for example `https://your-app.example.com` |
+| `OWNER_REGISTRATION_CODE` | Private owner invite code |
+| `STORE_KEEPER_REGISTRATION_CODE` | Private store invite code |
+| `FLOOR_SUPERVISOR_REGISTRATION_CODE` | Private floor invite code |
+| `DISPATCH_REGISTRATION_CODE` | Private dispatch invite code |
+
+Run migrations as the service's pre-deploy or release command:
+
 ```bash
-git checkout feature/inventory       # (or feature/production or feature/orders-finance)
-git merge main
+python -m alembic upgrade head
 ```
-Push changes to your feature branch:
+
+Start the API with the host-provided port:
+
 ```bash
-git push origin feature/<your-feature-name>
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+The health/readiness endpoint is `/health`; API documentation is at `/docs`.
+
+### Frontend
+
+Set the service root to `frontend/`, install with `npm ci`, and build with `npm run build`. Configure `VITE_API_URL` to the backend's public base URL, such as `https://your-api.example.com`, then publish the generated `dist/` directory. Add the resulting frontend origin to backend `CORS_ORIGINS`.
+
+### Existing Local Data
+
+Alembic creates and updates the database schema; it does not copy rows from the local SQLite file to PostgreSQL. The initial migration is intended for a new production database. Preserve local records separately before deployment if they are needed.
+
+### Ongoing Schema Changes
+
+After changing SQLAlchemy models, create and inspect a revision before deployment:
+
+```bash
+cd backend
+python -m alembic revision --autogenerate -m "describe schema change"
+python -m alembic upgrade head
+```
+
+## Git Workflow
+
+```bash
+git checkout feature/inventory
+git merge main
+git push origin feature/inventory
 ```

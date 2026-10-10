@@ -205,7 +205,7 @@ export default function Orders({ user }) {
             </div>
           )}
         </div>
-        {['owner', 'operator', 'dispatch'].includes(user?.role) && (
+        {['owner', 'dispatch'].includes(user?.role) && (
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => {

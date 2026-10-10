@@ -54,7 +54,7 @@ class DispatchCreate(BaseModel):
 @router.get("/orders")
 def get_all_orders(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_roles("owner", "dispatch", "store_keeper", "floor_supervisor", "operator")),
+    current_user: models.User = Depends(require_roles("owner", "dispatch", "store_keeper", "floor_supervisor")),
 ):
     """List all orders with current production status and progress."""
     orders = db.query(models.BuyerOrder).all()

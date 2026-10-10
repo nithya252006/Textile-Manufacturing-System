@@ -26,7 +26,7 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     password_hash = Column(String(200), nullable=False)
-    role = Column(String(50), nullable=False) # "owner" | "operator" | "buyer"
+    role = Column(String(50), nullable=False) # owner, store_keeper, floor_supervisor, dispatch, buyer
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships

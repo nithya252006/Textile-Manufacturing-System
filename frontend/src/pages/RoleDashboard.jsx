@@ -15,12 +15,6 @@ const ROLE_CONTENT = {
     section: 'Floor & Quality QC',
     icon: Factory,
   },
-  operator: {
-    title: 'Production Floor Overview',
-    subtitle: 'Machine readiness, shift output, and pending quality inspections.',
-    section: 'Floor & Quality QC',
-    icon: Factory,
-  },
   dispatch: {
     title: 'Dispatch Desk Overview',
     subtitle: 'Open commitments, available finished rolls, and completed shipments.',
@@ -82,7 +76,7 @@ function SectionButton({ children, onClick }) {
 }
 
 export default function RoleDashboard({ user, dashboardRole, setActiveTab }) {
-  const role = dashboardRole || (user?.role === 'operator' ? 'floor_supervisor' : user?.role);
+  const role = dashboardRole || user?.role;
   const roleContent = ROLE_CONTENT[role] || ROLE_CONTENT.floor_supervisor;
   const content = user?.role === 'owner' && role === 'buyer'
     ? { ...roleContent, title: 'Buyer Portfolio Overview', section: 'Buyer Portfolio' }

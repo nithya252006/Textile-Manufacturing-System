@@ -8,7 +8,6 @@ export const AUTH_ROLES = [
 
 export const ROLE_HOME = {
   owner: 'dashboard',
-  operator: 'dashboard',
   store_keeper: 'dashboard',
   floor_supervisor: 'dashboard',
   dispatch: 'dashboard',

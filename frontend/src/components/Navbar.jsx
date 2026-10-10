@@ -16,7 +16,6 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
     if (user.role === 'store_keeper') return ['dashboard', 'inventory'].includes(tab.id);
     if (user.role === 'floor_supervisor') return ['dashboard', 'production'].includes(tab.id);
     if (user.role === 'buyer' || user.role === 'dispatch') return ['dashboard', 'orders'].includes(tab.id);
-    if (user.role === 'operator') return ['dashboard', 'production'].includes(tab.id);
     return true;
   });
 
@@ -26,7 +25,6 @@ export default function Navbar({ activeTab, setActiveTab, user, onLogout }) {
     floor_supervisor: 'Floor Overview',
     dispatch: 'Dispatch Overview',
     buyer: 'Buyer Overview',
-    operator: 'Operations Overview',
   };
 
   return (
