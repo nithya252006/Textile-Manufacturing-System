@@ -165,12 +165,12 @@ The repository includes a Render Blueprint at `render.yaml` and Vercel SPA routi
 1. Create a Neon project and database.
 2. Copy the database connection string from Neon. Use the direct connection string and keep it private; do not add it to source files or commit it.
 
-The application still defaults to SQLite for local development. Render sets `APP_ENV=production`, which requires a PostgreSQL `DATABASE_URL`; it will not silently start on SQLite.
+The application still defaults to SQLite for local development. Render sets `APP_ENV=production`, which requires a PostgreSQL `DATABASE_URL`; it will not silently start on SQLite. Use Neon’s pooled URL for `DATABASE_URL` (runtime traffic) and its direct/unpooled URL for `MIGRATION_DATABASE_URL` (Alembic startup migrations).
 
 ### 2. Deploy the API on Render
 
 1. Push the repository to GitHub, then create a Render Blueprint from that repository. Render reads the root `render.yaml` and creates the Python web service.
-2. When prompted for `DATABASE_URL`, enter the Neon connection string. For initial `CORS_ORIGINS`, enter a temporary valid origin such as `https://example.invalid`; replace it with the Vercel URL after the frontend is deployed.
+2. When prompted, enter Neon’s pooled connection string for `DATABASE_URL` and its direct/unpooled connection string for `MIGRATION_DATABASE_URL`. For initial `CORS_ORIGINS`, enter a temporary valid origin such as `https://example.invalid`; replace it with the Vercel URL after the frontend is deployed.
 3. Render generates the JWT secret and staff invite codes. Keep those values private. Buyer registration is open; owner and staff accounts require their corresponding invite codes.
 4. The start command runs `python -m alembic upgrade head` before Uvicorn, and Render checks `/health`.
 

@@ -21,7 +21,8 @@ from database import Base
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
+MIGRATION_DATABASE_URL = os.getenv("MIGRATION_DATABASE_URL", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", MIGRATION_DATABASE_URL.replace("%", "%%"))
 target_metadata = Base.metadata
 
 
@@ -37,7 +38,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = DATABASE_URL
+    url = MIGRATION_DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,

@@ -119,8 +119,11 @@ def collect_demo_password_updates(source_engine):
 def upgrade_target(target_url):
     config = Config(str(Path(__file__).resolve().with_name("alembic.ini")))
     previous_database_url = os.environ.get("DATABASE_URL")
+    previous_migration_database_url = os.environ.get("MIGRATION_DATABASE_URL")
     previous_app_env = os.environ.get("APP_ENV")
-    os.environ["DATABASE_URL"] = target_url.render_as_string(hide_password=False)
+    target_url_string = target_url.render_as_string(hide_password=False)
+    os.environ["DATABASE_URL"] = target_url_string
+    os.environ["MIGRATION_DATABASE_URL"] = target_url_string
     os.environ["APP_ENV"] = "production"
     try:
         with create_engine(target_url).connect() as connection:
@@ -136,6 +139,10 @@ def upgrade_target(target_url):
             os.environ.pop("DATABASE_URL", None)
         else:
             os.environ["DATABASE_URL"] = previous_database_url
+        if previous_migration_database_url is None:
+            os.environ.pop("MIGRATION_DATABASE_URL", None)
+        else:
+            os.environ["MIGRATION_DATABASE_URL"] = previous_migration_database_url
         if previous_app_env is None:
             os.environ.pop("APP_ENV", None)
         else:
