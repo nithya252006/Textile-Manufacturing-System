@@ -1,3 +1,7 @@
+from database import Base, engine
+import models  # IMPORTANT: models import pannala-na tables create aagaadhu
+
+Base.metadata.create_all(bind=engine)
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
