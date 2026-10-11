@@ -196,7 +196,15 @@ Do not use the development demo credentials in production. Demo users and sample
 
 ### Existing Local Data
 
-Alembic creates and updates the database schema; it does not copy rows from the local SQLite file to PostgreSQL. The initial migration is intended for a new production database. Preserve local records separately before deployment if they are needed. Do not point the first production deployment at an existing database with an unknown schema state.
+Alembic creates and updates the database schema; it does not copy rows from the local SQLite file to PostgreSQL. To preserve local records, create a new, empty PostgreSQL database and run the guarded transfer from `backend/`:
+
+```powershell
+cd backend
+$env:SQLITE_DATABASE_URL = "sqlite:///./textile_factory.db"
+python migrate_sqlite_to_postgres.py
+```
+
+The script prompts for `DATABASE_URL` with hidden input if it is not set in the environment. It applies the current Alembic migrations, refuses to copy into a database with existing application rows, copies the SQLite records and IDs, adjusts PostgreSQL ID sequences, and leaves the SQLite source unchanged. If seeded demo accounts are present, it asks for new passwords for those accounts so their documented development credentials are not carried into production. Save those new passwords securely. Do not point it at a PostgreSQL database that already contains important data.
 
 ### Ongoing Schema Changes
 
