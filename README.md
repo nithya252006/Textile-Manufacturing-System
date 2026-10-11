@@ -8,7 +8,7 @@ A full-stack textile manufacturing management application built to digitalize ya
 | --- | --- |
 | **Live Demo (Frontend)** | https://textile-manufacturing-system.vercel.app |
 | **GitHub Repository** | https://github.com/nithya252006/Textile-Manufacturing-System |
-| **Demo Video** | https://YOUR-VIDEO-LINK-HERE |
+| **Demo Video** |https://drive.google.com/file/d/1VJORV8A21vLBfz0nYH0cWQk9kmD2bMRI/view?usp=drivesdk |
 | Backend API (Swagger docs) | https://textile-manufacturing-system-xw74.onrender.com/docs |
 | Backend Health Check | https://textile-manufacturing-system-xw74.onrender.com/health |
 
