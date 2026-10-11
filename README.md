@@ -201,10 +201,12 @@ Alembic creates and updates the database schema; it does not copy rows from the 
 ```powershell
 cd backend
 $env:SQLITE_DATABASE_URL = "sqlite:///./textile_factory.db"
+Copy-Item migration-passwords.example.json migration-passwords.json
+# Edit migration-passwords.json locally with new passwords (12+ chars).
 python migrate_sqlite_to_postgres.py
 ```
 
-The script prompts for `DATABASE_URL` with hidden input if it is not set in the environment. It applies the current Alembic migrations, refuses to copy into a database with existing application rows, copies the SQLite records and IDs, adjusts PostgreSQL ID sequences, and leaves the SQLite source unchanged. If seeded demo accounts are present, it asks for new passwords for those accounts so their documented development credentials are not carried into production. Save those new passwords securely. Do not point it at a PostgreSQL database that already contains important data.
+The script prompts for `DATABASE_URL` with hidden input if it is not set in the environment. It reads seeded-account password replacements from the ignored `migration-passwords.json`, removes that file after a successful transfer, and retains it after a failure so you can retry. It applies the current Alembic migrations, refuses to copy into a database with existing application rows, copies the SQLite records and IDs, adjusts PostgreSQL ID sequences, and leaves the SQLite source unchanged. Save the new account passwords securely. Do not commit the populated password file or point the tool at a PostgreSQL database that already contains important data.
 
 ### Ongoing Schema Changes
 

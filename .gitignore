@@ -23,3 +23,4 @@ ENV/
 # ZIP backups
 *.zip
 .neon
+backend/migration-passwords.json

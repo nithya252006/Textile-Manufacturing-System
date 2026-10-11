@@ -1,5 +1,6 @@
 import getpass
 import hashlib
+import json
 import os
 import secrets
 from pathlib import Path
@@ -19,6 +20,7 @@ DEMO_EMAILS = {
     "buyer@everestmills.com",
 }
 BATCH_SIZE = 500
+PASSWORD_FILE = Path(__file__).resolve().with_name("migration-passwords.json")
 
 
 def password_hash(password):
@@ -62,6 +64,28 @@ def collect_demo_password_updates(source_engine):
         demo_users = connection.execute(
             select(users.c.email).where(users.c.email.in_(DEMO_EMAILS))
         ).scalars().all()
+
+    if PASSWORD_FILE.exists():
+        passwords = json.loads(PASSWORD_FILE.read_text(encoding="utf-8"))
+        if not isinstance(passwords, dict):
+            raise ValueError("migration-passwords.json must contain an email-to-password object")
+        missing_emails = sorted(set(demo_users) - passwords.keys())
+        if missing_emails:
+            raise ValueError(
+                "migration-passwords.json is missing passwords for: "
+                + ", ".join(missing_emails)
+            )
+        updates = {}
+        for email in sorted(demo_users):
+            password = passwords[email]
+            if (
+                not isinstance(password, str)
+                or len(password) < 12
+                or password.startswith("REPLACE_WITH_")
+            ):
+                raise ValueError(f"Password for {email} must be a string of at least 12 characters")
+            updates[email] = password_hash(password)
+        return updates
 
     updates = {}
     for email in sorted(demo_users):
@@ -213,6 +237,9 @@ def main():
             print(f"  {table_name}: {row_count} rows")
         if password_updates:
             print("Rotated production passwords for the seeded demo accounts.")
+        if PASSWORD_FILE.exists():
+            PASSWORD_FILE.unlink()
+            print("Removed the local migration password file.")
         print("SQLite source was not modified.")
     finally:
         source_engine.dispose()
