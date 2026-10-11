@@ -32,6 +32,14 @@ def password_hash(password):
 def get_target_url():
     raw_url = os.getenv("DATABASE_URL")
     if not raw_url:
+        env_file = Path(__file__).resolve().parents[1] / ".env.local"
+        if env_file.is_file():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                key, separator, value = line.partition("=")
+                if separator and key.strip() == "DATABASE_URL":
+                    raw_url = value.strip().strip("\"").strip("'")
+                    break
+    if not raw_url:
         raw_url = getpass.getpass("PostgreSQL DATABASE_URL (input hidden): ")
     url = make_url(raw_url)
     if url.drivername in {"postgres", "postgresql"}:
