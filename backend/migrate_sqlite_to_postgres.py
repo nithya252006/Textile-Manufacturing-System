@@ -30,15 +30,20 @@ def password_hash(password):
 
 
 def get_target_url():
-    raw_url = os.getenv("DATABASE_URL")
+    raw_url = (
+        os.getenv("MIGRATION_DATABASE_URL")
+        or os.getenv("DATABASE_URL_UNPOOLED")
+        or os.getenv("DATABASE_URL")
+    )
     if not raw_url:
         env_file = Path(__file__).resolve().parents[1] / ".env.local"
         if env_file.is_file():
+            local_urls = {}
             for line in env_file.read_text(encoding="utf-8").splitlines():
                 key, separator, value = line.partition("=")
-                if separator and key.strip() == "DATABASE_URL":
-                    raw_url = value.strip().strip("\"").strip("'")
-                    break
+                if separator and key.strip() in {"DATABASE_URL_UNPOOLED", "DATABASE_URL"}:
+                    local_urls[key.strip()] = value.strip().strip("\"").strip("'")
+            raw_url = local_urls.get("DATABASE_URL_UNPOOLED") or local_urls.get("DATABASE_URL")
     if not raw_url:
         raw_url = getpass.getpass("PostgreSQL DATABASE_URL (input hidden): ")
     url = make_url(raw_url)
